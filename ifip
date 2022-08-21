@@ -1,0 +1,128 @@
+#!/bin/sh
+# ifip
+# 2022-08-21 11:46:30 JST
+
+IPV4_REGEXP='(\b25[0-5]|\b2[0-4][0-9]|\b[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}'
+IPV6_REGEXP='(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))'
+
+ifip_main() {
+	trap _exit INT TERM
+
+	e_args=16
+	e_missing_app=17
+
+	_require realpath
+
+	scriptpath="$( realpath "$0" )"
+	scriptname="$( basename "$scriptpath" )"
+
+	while getopts h opt
+	do
+		case $opt in
+			h) ifip_help && return ;;
+			*) _invalid_opt ;;
+		esac
+	done
+
+	shift "$(( OPTIND - 1 ))"
+
+	[ -z "$cmd" ] && cmd="process"
+
+	case "$cmd" in
+		process) "ifip_$cmd" "$@" ;;
+		help|usage) ifip_help ;;
+		*) _invalid_cmd ;;
+	esac
+
+	_exit
+}
+
+ifip_help() {
+cat <<USAGE
+Usage: $scriptname [options] command
+
+List network interfaces and their IP addresses.
+
+Will list no IP address if there is none.
+
+Available options:
+
+	-h        Show this help screen.
+
+USAGE
+}
+
+ifip_process() {
+	for name in $( ifconfig -lu )
+	do
+		printf \
+			"%s %s\n" \
+			"$name" \
+			"$(
+					ifconfig "$name" \
+						| grep inet \
+						| head -1 \
+						| grep -Eo "(inet $IPV4_REGEXP|inet6 $IPV6_REGEXP)" \
+						| cut -d ' ' -f 2 \
+						| sed 's/%.*$//' \
+						;
+			)" \
+			;
+	done \
+		| sort -V \
+		;
+}
+
+_echo() {
+	echo "$@"
+}
+
+_error() {
+	_echo "$@" >&2
+}
+
+_exit() {
+	exit_code=$?
+	exit $exit_code
+}
+
+_fatal() {
+	exit_code="$1"
+	shift
+	_error "$@"
+	exit "$exit_code"
+}
+
+_invalid_cmd() {
+	_error "Invalid command: $cmd"
+	_echo
+	ifip_help
+	exit $e_args
+}
+
+_invalid_opt() {
+	_error "Invalid option: $opt"
+	_echo
+	ifip_help
+	exit $e_args
+}
+
+_require() {
+	missing_bin=0
+
+	for bin in "$@"
+	do
+		if ! which "$bin" > /dev/null 2>&1
+		then
+			missing_bin=1
+			_error "Required: $bin"
+		fi
+	done
+
+	if [ $missing_bin -ne 0 ]
+	then
+		_fatal $e_missing_app "One or more executables or apps are missing."
+	fi
+}
+
+ifip_main "$@"
