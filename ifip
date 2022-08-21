@@ -16,9 +16,12 @@ ifip_main() {
 	scriptpath="$( realpath "$0" )"
 	scriptname="$( basename "$scriptpath" )"
 
-	while getopts h opt
+	all=0
+
+	while getopts ah opt
 	do
 		case $opt in
+			a) all=1 ;;
 			h) ifip_help && return ;;
 			*) _invalid_opt ;;
 		esac
@@ -43,10 +46,9 @@ Usage: $scriptname [options] command
 
 List network interfaces and their IP addresses.
 
-Will list no IP address if there is none.
-
 Available options:
 
+	-a        Show all interfaces, including those without address.
 	-h        Show this help screen.
 
 USAGE
@@ -55,18 +57,22 @@ USAGE
 ifip_process() {
 	for name in $( ifconfig -lu )
 	do
-		printf \
-			"%s %s\n" \
-			"$name" \
-			"$(
+		ip="$(
 					ifconfig "$name" \
-						| grep inet \
+						| grep inet 2>/dev/null \
 						| head -1 \
 						| grep -Eo "(inet $IPV4_REGEXP|inet6 $IPV6_REGEXP)" \
 						| cut -d ' ' -f 2 \
 						| sed 's/%.*$//' \
 						;
-			)" \
+		)"
+
+		[ $all -eq 0 ] && [ "$ip" == "" ] && continue
+
+		printf \
+			"%s %s\n" \
+			"$name" \
+			"$ip" \
 			;
 	done \
 		| sort -V \

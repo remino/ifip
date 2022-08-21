@@ -6,10 +6,9 @@ Usage: ifip [options] command
 
 List network interfaces and their IP addresses.
 
-Will list no IP address if there is none.
-
 Available options:
 
+	-a        Show all interfaces, including those without address.
 	-h        Show this help screen.
 
 ```
