@@ -60,10 +60,11 @@ ifip_process() {
 		ip="$(
 					ifconfig "$name" \
 						| grep inet 2>/dev/null \
-						| head -1 \
 						| grep -Eo "(inet $IPV4_REGEXP|inet6 $IPV6_REGEXP)" \
 						| cut -d ' ' -f 2 \
 						| sed 's/%.*$//' \
+						| sort -V \
+						| tr '\n' ' ' \
 						;
 		)"
 
