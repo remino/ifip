@@ -58,14 +58,14 @@ ifip_process() {
 	for name in $( ifconfig -lu )
 	do
 		ip="$(
-					ifconfig "$name" \
-						| grep inet 2>/dev/null \
-						| grep -Eo "(inet $IPV4_REGEXP|inet6 $IPV6_REGEXP)" \
-						| cut -d ' ' -f 2 \
-						| sed 's/%.*$//' \
-						| sort -V \
-						| tr '\n' ' ' \
-						;
+			ifconfig "$name" \
+				| grep inet 2>/dev/null \
+				| grep -Eo "(inet $IPV4_REGEXP|inet6 $IPV6_REGEXP)" \
+				| cut -d ' ' -f 2 \
+				| sed 's/%.*$//' \
+				| sort -V \
+				| tr '\n' ' ' \
+				;
 		)"
 
 		[ $all -eq 0 ] && [ "$ip" == "" ] && continue
