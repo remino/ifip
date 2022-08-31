@@ -1,7 +1,7 @@
 #!/bin/sh
 # ifip
-# 2022-08-21 11:46:30 JST
 
+VERSION="1.0.0"
 IPV4_REGEXP='(\b25[0-5]|\b2[0-4][0-9]|\b[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}'
 IPV6_REGEXP='(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))'
 
@@ -18,11 +18,12 @@ ifip_main() {
 
 	all=0
 
-	while getopts ah opt
+	while getopts ahv opt
 	do
 		case $opt in
 			a) all=1 ;;
-			h) ifip_help && return ;;
+			h) cmd=help ;;
+			v) cmd=version ;;
 			*) _invalid_opt ;;
 		esac
 	done
@@ -32,8 +33,7 @@ ifip_main() {
 	[ -z "$cmd" ] && cmd="process"
 
 	case "$cmd" in
-		process) "ifip_$cmd" "$@" ;;
-		help|usage) ifip_help ;;
+		help|process|version) "ifip_$cmd" "$@" ;;
 		*) _invalid_cmd ;;
 	esac
 
@@ -42,6 +42,8 @@ ifip_main() {
 
 ifip_help() {
 cat <<USAGE
+$scriptname $VERSION
+
 Usage: $scriptname [options] command
 
 List network interfaces and their IP addresses.
@@ -50,6 +52,7 @@ Available options:
 
 	-a        Show all interfaces, including those without address.
 	-h        Show this help screen.
+	-v        Show version number.
 
 USAGE
 }
@@ -78,6 +81,10 @@ ifip_process() {
 	done \
 		| sort -V \
 		;
+}
+
+ifip_version() {
+	_echo "$scriptname $VERSION"
 }
 
 _echo() {
